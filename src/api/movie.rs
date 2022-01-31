@@ -19,4 +19,7 @@ impl Movie{
     async fn Genre(&self) -> String {
         self.Genre.clone()
     }
+    async fn name(&self) -> String {
+        self.name.clone()
+    }
 }
