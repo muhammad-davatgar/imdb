@@ -6,11 +6,14 @@ use warp::{http::Response as HttpResponse, Filter, Rejection};
 
 #[path="movie.rs"]
 mod movie;
-
 use movie::Actor;
 use movie::Movie;
 
-struct Query;
+#[path="schema.rs"]
+mod schema;
+
+
+pub struct Query;
 
 
 
@@ -29,14 +32,14 @@ impl Query{
 
 
 pub fn api_filter() -> impl Filter<Extract=impl warp::Reply, Error=warp::Rejection> + Clone {
-    let schema = Schema::build(Query , EmptyMutation , EmptySubscription).finish();
+    let my_schema = schema::schema_builder();
 
-    let graphql_post = async_graphql_warp::graphql(schema).and_then(
-        |(schema, request): (
+    let graphql_post = async_graphql_warp::graphql(my_schema).and_then(
+        |(my_schema, request): (
             Schema<Query, EmptyMutation, EmptySubscription>,
             async_graphql::Request,
         )| async move {
-            Ok::<_, Infallible>(GraphQLResponse::from(schema.execute(request).await))
+            Ok::<_, Infallible>(GraphQLResponse::from(my_schema.execute(request).await))
         },
     );
 
