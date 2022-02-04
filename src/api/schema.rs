@@ -1,6 +1,5 @@
 use async_graphql::{Schema , EmptyMutation, EmptySubscription };
-use arangors::connection::{self , GenericConnection};
-use uclient::reqwest::ReqwestClient;
+use arangors::connection::{self , Connection};
 use async_trait::async_trait;
 use deadpool::managed;
 
@@ -8,34 +7,32 @@ use deadpool::managed;
 use super::Query;
 
 
-static DB_NAME :&str = "IMDB";
-
+use crate::DB_NAME;
 
 #[derive(Debug)]
-enum Error { Fail }
+pub enum Error { Fail }
 
 
 
-struct Manager {}
+pub struct Manager {}
 
 #[async_trait]
 impl managed::Manager for Manager {
-    type Type = GenericConnection<ReqwestClient>;
+    type Type = Connection;
     type Error = Error;
-    
-    async fn create(&self) -> Result<Type, Error> {
-        let conn = connection::establish_without_auth("http://localhost:8529")
+    async fn create(&self) -> Result<Connection, Error> {
+        let conn = Connection::establish_without_auth("http://localhost:8529")
             .await.expect("couldn't connecto to db");
-        let db = conn.db(DB_NAME);
-        Ok(db)
+        // let db = conn.db(DB_NAME);
+        Ok(conn)
     }
     
-    async fn recycle(&self, _: &mut Type) -> managed::RecycleResult<Error> {
+    async fn recycle(&self, _: &mut Connection) -> managed::RecycleResult<Error> {
         Ok(())
     }
 }
 
-type Pool = managed::Pool<Manager>;
+pub type Pool = managed::Pool<Manager>;
 
 
 

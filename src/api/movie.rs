@@ -1,11 +1,14 @@
-use async_graphql::{Context , Object};
+use async_graphql::SimpleObject;
 
 #[path="actor.rs"]
 mod actor;
 pub use actor::Actor;
 
+
+
+#[derive(SimpleObject)]
 pub struct Movie{
-    pub Genre : String,
+    pub genre : String,
     pub name : String,
     pub year : i32,
     pub description : String,
@@ -13,13 +16,3 @@ pub struct Movie{
 }
 
 
-
-#[Object]
-impl Movie{
-    async fn Genre(&self) -> String {
-        self.Genre.clone()
-    }
-    async fn name(&self) -> String {
-        self.name.clone()
-    }
-}

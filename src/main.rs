@@ -5,6 +5,8 @@ use async_graphql_warp::GraphQLBadRequest;
 
 mod server;
 
+pub static DB_NAME : &str = "IMDB";
+
 #[tokio::main]
 async fn main() {
 
