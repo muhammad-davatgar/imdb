@@ -30,18 +30,51 @@ struct Parameter {
 #[Object]
 impl Query{
     async fn movie<'a>(&self , ctx : &Context<'a> , name : String) -> Movie{
-        Movie { 
-            genre : String::from("action"),
-            name : name,
-            year : 1234,
-            description : String::from("i'm description "),
-            actors : vec![Actor{name : String::from("actor name") , year : 12534}]
-        }
+        // getting the connection
+        let pool = ctx.data::<Pool>().expect("failure using the pool");
+        let conn = pool.get().await.expect("failure getting the connection");
+        let conn = conn.db(DB_NAME).await.expect("failure getting db");
+
+        // making the query
+        let mut vars = HashMap::new();
+        let param = Parameter{
+            param : name
+        };
+        vars.insert("name" , serde_json::value::to_value(&param).unwrap());
+
+        let mut result: Vec<Movie> = conn
+            .aql_bind_vars(r#"FOR doc in imdb_vertices
+             FILTER doc.title ==@name.param 
+             return {genre : doc.genre , 
+                title : doc.title , 
+                released : doc.released , 
+                runtime : doc.runtime , 
+                description : doc.description}"#, vars)
+            .await.expect("here");
+
+
+        result.pop().unwrap_or_else(||{ 
+            Movie { 
+                genre : "not found".to_string(),
+                title : "dunno how to return 404".to_string(),
+                released : "-1".to_string() ,
+                runtime : -1 ,
+                description : "not found".to_string()
+            }
+        })
+
+        // Movie { 
+        //     genre : String::from("action"),
+        //     name : name,
+        //     year : 1234,
+        //     description : String::from("i'm description "),
+        //     actors : vec![Actor{name : String::from("actor name") , birthday : "12534" , birthplace : "khan amir"}]
+        // }
     }
 
     async fn acotr<'a>(&self , ctx : &Context<'a> , name : String) -> Actor {
-        let conn = ctx.data::<Pool>().expect("failure using the pool")
-            .get().await.expect("failure getting the connection");
+        let pool = ctx.data::<Pool>().expect("failure using the pool");
+        let conn = pool.get().await.expect("failure getting the connection");
         let conn = conn.db(DB_NAME).await.expect("failure getting DB");
         // let collection = conn.collection("imdb_vertices").await.expect("failure getting collection");
 
@@ -51,12 +84,13 @@ impl Query{
         };
         vars.insert("name" , serde_json::value::to_value(&param).unwrap());
         let mut result: Vec<Actor> = conn
-            .aql_bind_vars(r#"FOR doc in imdb_vertices FILTER doc.name ==@name.param return {name : doc.name , year : 12}"#, vars)
+            .aql_bind_vars(r#"FOR doc in imdb_vertices
+             FILTER doc.name ==@name.param 
+             return {name : doc.name , birthday : doc.birthday , birthplace : doc.birthplace}"#, vars)
             // .aql_str(r#"for doc in imdb_vertices filter doc.name == "James Cameron" return doc "#)
             .await
             .expect("here");
-        println!("{:?}" , result);
-        result.pop().unwrap_or_else(|| Actor{ name : "dunno how to return 404".to_string() , year : -1})
+        result.pop().unwrap_or_else(|| Actor{ name : "dunno how to return 404".to_string() , birthday : "-1".to_string() , birthplace : "khan amir".to_string()})
     }
 }
 

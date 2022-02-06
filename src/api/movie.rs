@@ -1,18 +1,18 @@
 use async_graphql::SimpleObject;
-
+use serde::Deserialize;
 #[path="actor.rs"]
 mod actor;
 pub use actor::Actor;
 
 
 
-#[derive(SimpleObject)]
+#[derive(SimpleObject , Deserialize)]
 pub struct Movie{
     pub genre : String,
-    pub name : String,
-    pub year : i32,
+    pub title : String,
+    pub released : String,
     pub description : String,
-    pub actors : Vec<Actor>
+    pub runtime : i32,
 }
 
 
