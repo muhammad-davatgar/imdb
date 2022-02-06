@@ -1,4 +1,4 @@
-use async_graphql::{Context , Object , EmptyMutation, EmptySubscription, Schema , Result as Qres , Error as Qerr};
+use async_graphql::{Context , Object , EmptyMutation, EmptySubscription, Schema , Result, Error as Qerr , ErrorExtensions};
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_warp::{ GraphQLResponse};
 use std::convert::Infallible;
@@ -6,6 +6,7 @@ use warp::{http::Response as HttpResponse, Filter, Rejection};
 use arangors::{Connection , Document};
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
+use serde_json::json;
 #[path="movie.rs"]
 mod movie;
 use movie::Actor;
@@ -27,9 +28,12 @@ struct Parameter {
 
 // TODO : 
 //      split the Object implementations into several files 
+//      use arangosearch 
+//      return graph related data 
+//      return stream (cursor or ?)
 #[Object]
 impl Query{
-    async fn movie<'a>(&self , ctx : &Context<'a> , name : String) -> Movie{
+    async fn movie<'a>(&self , ctx : &Context<'a> , name : String) -> Result<Movie>{
         // getting the connection
         let pool = ctx.data::<Pool>().expect("failure using the pool");
         let conn = pool.get().await.expect("failure getting the connection");
@@ -53,26 +57,14 @@ impl Query{
             .await.expect("here");
 
 
-        result.pop().unwrap_or_else(||{ 
-            Movie { 
-                genre : "not found".to_string(),
-                title : "dunno how to return 404".to_string(),
-                released : "-1".to_string() ,
-                runtime : -1 ,
-                description : "not found".to_string()
-            }
-        })
+        match result.pop() { 
+            Some(v) => Ok(v),
+            None => Err(Qerr::new("not found").extend_with(|_err, e| e.set("code", 404)))
+        }
 
-        // Movie { 
-        //     genre : String::from("action"),
-        //     name : name,
-        //     year : 1234,
-        //     description : String::from("i'm description "),
-        //     actors : vec![Actor{name : String::from("actor name") , birthday : "12534" , birthplace : "khan amir"}]
-        // }
     }
 
-    async fn acotr<'a>(&self , ctx : &Context<'a> , name : String) -> Actor {
+    async fn actor<'a>(&self , ctx : &Context<'a> , name : String) -> Result<Actor> {
         let pool = ctx.data::<Pool>().expect("failure using the pool");
         let conn = pool.get().await.expect("failure getting the connection");
         let conn = conn.db(DB_NAME).await.expect("failure getting DB");
@@ -90,7 +82,10 @@ impl Query{
             // .aql_str(r#"for doc in imdb_vertices filter doc.name == "James Cameron" return doc "#)
             .await
             .expect("here");
-        result.pop().unwrap_or_else(|| Actor{ name : "dunno how to return 404".to_string() , birthday : "-1".to_string() , birthplace : "khan amir".to_string()})
+        match result.pop() { 
+            Some(v) => Ok(v),
+            None => Err(Qerr::new("not found").extend_with(|_err, e| e.set("code", 404)))
+        }
     }
 }
 
