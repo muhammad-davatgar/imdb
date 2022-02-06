@@ -1,13 +1,12 @@
 use async_graphql::{Schema , EmptyMutation, EmptySubscription };
-use arangors::connection::{self , Connection};
+use arangors::connection::Connection;
 use async_trait::async_trait;
 use deadpool::managed;
 
 
-use super::Query;
+// use super::Query;
+use crate::server::api::Query;
 
-
-use crate::DB_NAME;
 
 #[derive(Debug)]
 pub enum Error { Fail }
@@ -41,7 +40,7 @@ pub fn schema_builder() -> Schema<Query , EmptyMutation , EmptySubscription> {
 
     let mgr = Manager {};
     let pool = Pool::builder(mgr).build().expect("failure building connection pool");
-    let schema = Schema::build(Query , EmptyMutation , EmptySubscription).data(pool).finish();
+    let schema = Schema::build(Query::default() , EmptyMutation , EmptySubscription).data(pool).finish();
     schema
 }
 

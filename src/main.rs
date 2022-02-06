@@ -1,5 +1,5 @@
 use std::convert::Infallible;
-use warp::{http::Response as HttpResponse, Filter, Rejection};
+use warp::{Filter, Rejection};
 use http::StatusCode;
 use async_graphql_warp::GraphQLBadRequest;
 
